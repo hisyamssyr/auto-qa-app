@@ -37,11 +37,11 @@ class QaAgent
             try {
                 $state = $this->browser->start($project->website_url, $project->target_mode);
             } catch (\Throwable $exception) {
-                $this->recordTool(['tool' => 'start'], ['error' => 'Browser start failed.'], 'failed', $this->durationMs($startedAt));
+                $this->recordTool(['tool' => 'start'], ['error' => 'Browser start failed.'], 'failed', $this->durationMs($startedAt), true);
 
                 throw $exception;
             }
-            $this->recordTool(['tool' => 'start'], $this->toolResultSummary($state), 'succeeded', $this->durationMs($startedAt));
+            $this->recordTool(['tool' => 'start'], $this->toolResultSummary($state), 'succeeded', $this->durationMs($startedAt), true);
             $session = $state['session_id'];
             $this->assertActive($run);
             $snapshot = $state['snapshot'];
@@ -301,11 +301,11 @@ class QaAgent
         try {
             $evidence = $this->browser->act($session, ['tool' => 'screenshot']);
         } catch (\Throwable $exception) {
-            $this->recordTool(['tool' => 'screenshot'], ['error' => 'Screenshot capture failed.'], 'failed', $this->durationMs($startedAt));
+            $this->recordTool(['tool' => 'screenshot'], ['error' => 'Screenshot capture failed.'], 'failed', $this->durationMs($startedAt), true);
 
             throw $exception;
         }
-        $this->recordTool(['tool' => 'screenshot'], ['artifact' => $evidence['artifact'] ?? null], 'succeeded', $this->durationMs($startedAt));
+        $this->recordTool(['tool' => 'screenshot'], ['artifact' => $evidence['artifact'] ?? null], 'succeeded', $this->durationMs($startedAt), true);
         $failure = ['network_errors' => $errors, 'assertion' => $result['assertion'] ?? null,
             'url' => $result['snapshot']['url'] ?? $run->project->website_url, 'artifact' => $evidence['artifact'] ?? null];
         $run->findings()->create(['title' => $errors ? 'A server error interrupted the tested journey' : 'Expected behavior was not observed',
@@ -408,10 +408,10 @@ class QaAgent
         }
     }
 
-    private function recordTool(array $action, array $result, string $status, int $durationMs): void
+    private function recordTool(array $action, array $result, string $status, int $durationMs, bool $system = false): void
     {
         try {
-            $this->recorder->logTool($action, $result, $status, $durationMs);
+            $this->recorder->logTool($action, $result, $status, $durationMs, $system);
         } catch (\Throwable $exception) {
             report($exception);
         }
@@ -424,12 +424,12 @@ class QaAgent
         try {
             $closed = $this->browser->close($session);
         } catch (\Throwable $exception) {
-            $this->recordTool(['tool' => 'close'], ['error' => 'Browser close failed.'], 'failed', $this->durationMs($startedAt));
+            $this->recordTool(['tool' => 'close'], ['error' => 'Browser close failed.'], 'failed', $this->durationMs($startedAt), true);
 
             throw $exception;
         }
 
-        $this->recordTool(['tool' => 'close'], ['closed' => $closed['closed'] ?? true], 'succeeded', $this->durationMs($startedAt));
+        $this->recordTool(['tool' => 'close'], ['closed' => $closed['closed'] ?? true], 'succeeded', $this->durationMs($startedAt), true);
 
         return $closed;
     }

@@ -92,7 +92,7 @@ class TranscriptRecorderTest extends TestCase
                 throw new RuntimeException('recording failed');
             }
 
-            public function logTool(array $action, array $result, string $status, int $durationMs): void
+            public function logTool(array $action, array $result, string $status, int $durationMs, bool $system = false): void
             {
                 throw new RuntimeException('recording failed');
             }
@@ -136,5 +136,8 @@ class TranscriptRecorderTest extends TestCase
         $this->assertNotNull($session);
         $this->assertSame(['start', 'assert_text', 'close'], $session->toolExecutionLogs()->pluck('tool_name')->all());
         $this->assertSame('succeeded', $session->toolExecutionLogs()->where('tool_name', 'assert_text')->value('status'));
+        $this->assertSame('system', $session->toolExecutionLogs()->where('tool_name', 'start')->firstOrFail()->chatMessage->role);
+        $this->assertSame('system', $session->toolExecutionLogs()->where('tool_name', 'close')->firstOrFail()->chatMessage->role);
+        $this->assertSame('system', $session->toolExecutionLogs()->where('tool_name', 'assert_text')->firstOrFail()->chatMessage->role);
     }
 }

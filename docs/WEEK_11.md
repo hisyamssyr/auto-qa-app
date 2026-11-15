@@ -148,7 +148,7 @@ Tidak ada tabel yang menyimpan prompt, jawaban mentah, nama model, atau jumlah t
 - PHPUnit (`phpunit.xml`): SQLite `:memory:`, `QUEUE_CONNECTION=sync`, cache dan session `array`.
 - Feature: `AuthTest`, `DashboardTest`, `EvidenceTest`, `ExampleTest`, `ExecuteQaRunTest`, `PreferencesTest`, `QaAgentTest`, `RepairSandboxTest`. Unit: `BrowserWorkerTest`, `ExampleTest`, `GitHubAppClientTest`, `GitHubRepositoryUrlTest`, `ModelClientTest`, `PatchPolicyTest`, `TargetPolicyTest`. Worker: `browser`, `browser.integration`, `policy`, `server`.
 - Factory: `UserFactory`, `ProjectFactory` (state `local()`, `publishing()`), `QaRunFactory`. Seeder: `DatabaseSeeder` (membuat "Test User"), `PreviewSeeder` (hanya jalan di `APP_ENV=testing` dengan database `/tmp/autoqa-ui-preview-*`).
-- Dependensi luar di-mock. **Baseline sebelum implementasi: 223 test / 887 assertion hijau. Setelah implementasi WS0–WS8: 257 test / 1034 assertion hijau.** `AuthTest` sudah disesuaikan dengan route Breeze dan test Breeze bawaan tidak dipakai mentah.
+- Dependensi luar di-mock. **Baseline sebelum implementasi: 223 test / 887 assertion hijau. Setelah implementasi WS0–WS8: 257 test / 1037 assertion hijau.** `AuthTest` sudah disesuaikan dengan route Breeze dan test Breeze bawaan tidak dipakai mentah.
 
 ### 3.10 Batasan yang sudah terdokumentasi (README dan docs)
 
@@ -676,7 +676,7 @@ Breeze aktif dan auth kustom sudah dihapus; suite PHPUnit hijau; `cd worker && n
 | R19 | Registrasi Breeze default membuka pendaftaran banyak operator dan password minimal 8 | Pindahkan aturan single-operator, `Cache::lock`, dan `Password::min(12)` ke `RegisteredUserController`; uji registrasi kedua 403 |
 | R20 | Alpine/Tailwind dari Breeze bentrok dengan Tailwind 4 yang sudah ada | Pertahankan pipeline Tailwind 4; tambahkan Alpine hanya jika diperlukan; jalankan `npm run build` |
 | A1 | Asumsi: satu operator menggunakan seluruh sistem; kapasitas SQLite memadai | |
-| A2 | Asumsi: baseline test hijau | Diverifikasi; suite akhir 257 test / 1034 assertion |
+| A2 | Asumsi: baseline test hijau | Diverifikasi; suite akhir 257 test / 1037 assertion |
 
 ---
 

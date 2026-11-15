@@ -15,6 +15,8 @@ class TranscriptRecorder
 
     private ?ChatMessage $currentMessage = null;
 
+    private ?ChatMessage $systemMessage = null;
+
     public function begin(QaRun $run): void
     {
         try {
@@ -28,6 +30,7 @@ class TranscriptRecorder
 
             $this->session = $session;
             $this->currentMessage = null;
+            $this->systemMessage = null;
         } catch (Throwable $exception) {
             report($exception);
         }
@@ -66,18 +69,18 @@ class TranscriptRecorder
         return $this->currentMessage;
     }
 
-    public function logTool(array $action, array $result, string $status, int $durationMs): void
+    public function logTool(array $action, array $result, string $status, int $durationMs, bool $system = false): void
     {
         if (! $this->session || ! $this->session->qa_run_id) {
             return;
         }
 
         try {
-            $message = $this->currentMessage ?? $this->append([
-                'role' => 'system',
-                'content' => 'Automated QA run actions.',
-            ]);
-            $this->currentMessage = $message;
+            $message = $system ? $this->systemMessage() : ($this->currentMessage ?? $this->systemMessage());
+
+            if (! $system) {
+                $this->currentMessage = $message;
+            }
 
             $message->toolExecutionLogs()->create([
                 'loggable_type' => QaRun::class,
@@ -102,6 +105,7 @@ class TranscriptRecorder
     {
         $this->session = null;
         $this->currentMessage = null;
+        $this->systemMessage = null;
     }
 
     private function append(array $attributes): ChatMessage
@@ -130,6 +134,14 @@ class TranscriptRecorder
         }
 
         throw new \RuntimeException('The transcript message could not be recorded.');
+    }
+
+    private function systemMessage(): ChatMessage
+    {
+        return $this->systemMessage ??= $this->append([
+            'role' => 'system',
+            'content' => 'Automated QA run actions.',
+        ]);
     }
 
     private function truncate(string $content): string
