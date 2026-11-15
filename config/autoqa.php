@@ -3,8 +3,8 @@
 $worker = env('BROWSER_WORKER_URL', 'http://127.0.0.1:3001');
 
 return [
-    'model_url' => env('MODEL_URL', 'http://127.0.0.1:11434/v1'),
-    'model_name' => env('MODEL_NAME', 'qwen3:1.7b'),
+    'model_url' => env('MODEL_URL', 'https://senopati.its.ac.id/llm-gateway/v1'),
+    'model_name' => env('MODEL_NAME', 'qwen3:14b'),
     'model_timeout' => (int) env('MODEL_TIMEOUT', 90),
     'model_key' => env('MODEL_API_KEY', ''),
     'browser_url' => $worker,

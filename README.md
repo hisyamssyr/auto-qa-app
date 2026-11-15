@@ -57,14 +57,15 @@ php artisan queue:work --timeout=1800 --tries=0 --sleep=1
 
 ## Connect the model, repository and website
 
-A small model is the starting point for the 8 GB CPU-only budget. One example is Ollama's `qwen3:1.7b`. Run a single local model and keep its context bounded; its repair accuracy and runtime need measurement on your demonstration repository. [Model package](https://ollama.com/library/qwen3:1.7b), [local API compatibility](https://docs.ollama.com/api/openai-compatibility).
+The default model is the campus LLM gateway (`qwen3:14b`) exposed through an OpenAI-compatible endpoint. Configure it privately in `.env`; `MODEL_API_KEY` is required by this gateway.
 
 ```bash
-ollama pull qwen3:1.7b
-ollama serve
+MODEL_URL=https://senopati.its.ac.id/llm-gateway/v1
+MODEL_NAME=qwen3:14b
+MODEL_API_KEY=<your campus key>
 ```
 
-The default `MODEL_URL=http://127.0.0.1:11434/v1` and `MODEL_NAME=qwen3:1.7b` match that example. The app does not install or start the model automatically. `MODEL_API_KEY` is optional for a local server and required if your model server enforces authentication.
+Keep the context bounded and measure repair accuracy and runtime on your demonstration repository. The app does not start the model server automatically. A local Ollama server remains usable as an alternative by overriding the same `MODEL_*` values.
 
 Follow [GitHub setup](docs/GITHUB_SETUP.md): register an App under your existing account, grant Contents and Pull requests read/write, install it only on the selected repository, and privately configure its App ID and RSA key path. The Connections page includes the registration and installation links. Actual access is checked per project.
 
