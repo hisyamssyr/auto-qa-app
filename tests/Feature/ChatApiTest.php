@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\ChatSession;
 use App\Models\User;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
+use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
@@ -121,6 +122,36 @@ class ChatApiTest extends TestCase
 
         $response->assertOk()->assertJsonPath('data.session_id', $session->id);
         $this->assertSame(2, $session->messages()->count());
+    }
+
+    public function test_chat_uses_themed_prompt_and_bounds_history(): void
+    {
+        config()->set('autoqa.chat_system_prompt', 'You are a QA engineer.');
+        config()->set('autoqa.chat_history_messages', 2);
+        $user = User::factory()->create();
+        Sanctum::actingAs($user, ['chat']);
+        $session = \App\Models\ChatSession::factory()->for($user)->create();
+
+        foreach (range(1, 5) as $sequence) {
+            \App\Models\ChatMessage::factory()->for($session)->create([
+                'sequence' => $sequence,
+                'role' => $sequence % 2 ? 'user' : 'assistant',
+                'content' => 'History '.$sequence,
+            ]);
+        }
+
+        $this->fakeModel('Answer.');
+
+        $this->postJson('/api/chat-ai', ['prompt' => 'Latest question', 'session_id' => $session->id])->assertOk();
+
+        Http::assertSent(function (Request $request): bool {
+            $messages = $request['messages'];
+
+            return $messages[0] === ['role' => 'system', 'content' => 'You are a QA engineer.']
+                && count($messages) === 3
+                && $messages[1]['content'] === 'History 5'
+                && $messages[2] === ['role' => 'user', 'content' => 'Latest question'];
+        });
     }
 
     private function fakeModel(string $content): void

@@ -71,7 +71,7 @@ class ChatService
     {
         $messages = $session->messages()
             ->whereIn('role', ['user', 'assistant'])
-            ->orderByDesc('sequence')
+            ->reorder('sequence', 'desc')
             ->limit(max(1, (int) config('autoqa.chat_history_messages', 10)))
             ->get()
             ->reverse()
