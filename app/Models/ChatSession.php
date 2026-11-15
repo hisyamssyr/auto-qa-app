@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 
 class ChatSession extends Model
 {
@@ -26,5 +27,17 @@ class ChatSession extends Model
     public function messages(): HasMany
     {
         return $this->hasMany(ChatMessage::class)->orderBy('sequence');
+    }
+
+    public function toolExecutionLogs(): HasManyThrough
+    {
+        return $this->hasManyThrough(
+            ToolExecutionLog::class,
+            ChatMessage::class,
+            'chat_session_id',
+            'chat_message_id',
+            'id',
+            'id',
+        );
     }
 }

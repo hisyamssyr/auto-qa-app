@@ -7,6 +7,10 @@ use RuntimeException;
 
 class ModelClient
 {
+    public function __construct(private ?TranscriptRecorder $recorder = null)
+    {
+    }
+
     public function ready(): bool
     {
         return (bool) config('autoqa.model_url');
@@ -52,6 +56,16 @@ class ModelClient
         if (! is_array($result) || array_is_list($result)) {
             throw new RuntimeException('The model returned invalid structured output. The run stopped without executing it.');
         }
+
+        $model = $response->json('model');
+        $usage = $response->json('usage');
+        $this->recorder?->recordExchange(
+            $instruction,
+            $context,
+            $content,
+            is_string($model) ? $model : null,
+            is_array($usage) ? $usage : null,
+        );
 
         return $result;
     }
