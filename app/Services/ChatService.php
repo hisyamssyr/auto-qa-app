@@ -23,6 +23,23 @@ class ChatService
         ]);
     }
 
+    public function sessionFor(User $user, ?int $sessionId, string $prompt): ChatSession
+    {
+        return $sessionId
+            ? $user->chatSessions()->findOrFail($sessionId)
+            : $this->start($user, $prompt);
+    }
+
+    /**
+     * @return array<int, array{role: string, content: string}>
+     */
+    public function prepareUserTurn(ChatSession $session, string $prompt): array
+    {
+        $this->append($session, 'user', $prompt);
+
+        return $this->messagesFor($session);
+    }
+
     /**
      * @return array{message: ChatMessage, model_used: string|null, total_tokens: int|null}
      */

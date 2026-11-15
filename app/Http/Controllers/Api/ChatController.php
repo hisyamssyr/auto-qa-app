@@ -16,9 +16,7 @@ class ChatController extends Controller
     {
         $data = $request->validated();
 
-        $session = isset($data['session_id'])
-            ? $request->user()->chatSessions()->findOrFail($data['session_id'])
-            : $chat->start($request->user(), $data['prompt']);
+        $session = $chat->sessionFor($request->user(), $data['session_id'] ?? null, $data['prompt']);
 
         try {
             $result = $chat->send($session, $data['prompt']);

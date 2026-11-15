@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Exceptions\ModelUnavailableException;
+use App\Exceptions\StreamUnsupportedException;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
 use RuntimeException;
@@ -58,6 +59,105 @@ class ModelClient
             'prompt_tokens' => is_array($usage) && isset($usage['prompt_tokens']) ? (int) $usage['prompt_tokens'] : null,
             'completion_tokens' => is_array($usage) && isset($usage['completion_tokens']) ? (int) $usage['completion_tokens'] : null,
             'total_tokens' => is_array($usage) && isset($usage['total_tokens']) ? (int) $usage['total_tokens'] : null,
+        ];
+    }
+
+    /**
+     * @return \Generator<int, array{type: string, delta?: string, model_used?: string|null, usage?: array|null}>
+     */
+    public function streamEvents(array $messages): \Generator
+    {
+        $payload = $this->chatPayload($messages);
+        $payload['stream'] = true;
+
+        if (config('autoqa.chat_stream_usage')) {
+            $payload['stream_options'] = ['include_usage' => true];
+        }
+
+        try {
+            $response = Http::withToken(config('autoqa.model_key') ?: 'local')
+                ->connectTimeout(3)
+                ->timeout(config('autoqa.model_timeout', 90))
+                ->withOptions(['stream' => true])
+                ->post(rtrim(config('autoqa.model_url'), '/').'/chat/completions', $payload);
+        } catch (ConnectionException $exception) {
+            throw new ModelUnavailableException('The language model is unavailable.', previous: $exception);
+        }
+
+        if (! $response->successful()) {
+            if (in_array($response->status(), [400, 404, 405, 422, 501], true)) {
+                throw new StreamUnsupportedException('The model provider does not support streaming.');
+            }
+
+            throw new ModelUnavailableException('The language model is unavailable.');
+        }
+
+        $body = $response->toPsrResponse()->getBody();
+        $parser = new SseParser();
+        $filter = new ThinkFilter();
+        $model = null;
+        $usage = null;
+
+        try {
+            while (! $body->eof()) {
+                $chunk = $body->read(1024);
+                if ($chunk === '') {
+                    break;
+                }
+
+                foreach ($parser->push($chunk) as $data) {
+                    if ($data === '[DONE]') {
+                        $tail = $filter->flush();
+                        if ($tail !== '') {
+                            yield ['type' => 'token', 'delta' => $tail];
+                        }
+
+                        yield [
+                            'type' => 'meta',
+                            'model_used' => $model ?? config('autoqa.model_name'),
+                            'usage' => $usage,
+                        ];
+
+                        return;
+                    }
+
+                    $decoded = json_decode($data, true);
+                    if (! is_array($decoded)) {
+                        continue;
+                    }
+
+                    if (is_string($decoded['model'] ?? null)) {
+                        $model = $decoded['model'];
+                    }
+
+                    if (is_array($decoded['usage'] ?? null)) {
+                        $usage = $decoded['usage'];
+                    }
+
+                    $delta = $decoded['choices'][0]['delta']['content'] ?? null;
+                    if (! is_string($delta) || $delta === '') {
+                        continue;
+                    }
+
+                    $text = $filter->push($delta);
+                    if ($text !== '') {
+                        yield ['type' => 'token', 'delta' => $text];
+                    }
+                }
+            }
+        } catch (ConnectionException $exception) {
+            throw new ModelUnavailableException('The language model stream was interrupted.', previous: $exception);
+        }
+
+        $tail = $filter->flush();
+        if ($tail !== '') {
+            yield ['type' => 'token', 'delta' => $tail];
+        }
+
+        yield [
+            'type' => 'meta',
+            'model_used' => $model ?? config('autoqa.model_name'),
+            'usage' => $usage,
         ];
     }
 
