@@ -124,6 +124,18 @@ class ChatApiTest extends TestCase
         $this->assertSame(2, $session->messages()->count());
     }
 
+    public function test_chat_is_rate_limited(): void
+    {
+        config()->set('autoqa.chat_api_throttle', 1);
+        Sanctum::actingAs(User::factory()->create(), ['chat']);
+        $this->fakeModel('Answer.');
+
+        $this->postJson('/api/chat-ai', ['prompt' => 'First'])->assertOk();
+        $this->postJson('/api/chat-ai', ['prompt' => 'Second'])
+            ->assertStatus(429)
+            ->assertJson(['status' => 'error', 'message' => 'Too many requests.']);
+    }
+
     public function test_chat_uses_themed_prompt_and_bounds_history(): void
     {
         config()->set('autoqa.chat_system_prompt', 'You are a QA engineer.');

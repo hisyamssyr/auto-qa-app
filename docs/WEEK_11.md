@@ -5,10 +5,10 @@
 | Repo | `github.com/hisyamssyr/auto-qa-app` |
 | Baseline yang dianalisis | commit `1500ddf` (2026-11-15), "feat: switch default LLM to campus Senopati gateway", yaitu `fc0ceb3` ditambah konfigurasi gateway kampus. Baseline uji: 223 test / 887 assertion hijau |
 | Tanggal PRD | 2026-11-15 |
-| Status | Draft untuk implementasi. Breeze wajib dikerjakan lebih dulu (§3.14, WS0); skema chat belum ada di checkout ini (§3.12) |
+| Status | **Diimplementasikan (v1.3).** Breeze, skema chat, transkrip, API chat, riwayat, streaming, prompt tema, dan fallback sudah masuk repo; lihat tabel status §11 |
 | Pembaca utama | Pengembang dan AI agent yang akan mengimplementasikan update |
 | Konteks | Tugas kuliah: Pemodelan Relasi Agentic AI Platform (Week 1) dan Secure LLM Chat API Hub (Week 2) |
-| Revisi | v1.2 (2026-11-15): **Breeze wajib dipakai** untuk autentikasi (§3.14, WS0); kemampuan gateway kampus diverifikasi (§3.13); status skema chat dikoreksi (§3.12); basis data **tetap SQLite** (§8.8) |
+| Revisi | v1.3 (2026-11-15): implementasi WS0–WS8 selesai; **Breeze wajib** terpasang (§3.14, WS0); kemampuan gateway kampus diverifikasi (§3.13); basis data **tetap SQLite** (§8.8) |
 
 ---
 
@@ -48,9 +48,9 @@ Sumber kebenaran adalah **repo ini**. Deskripsi tugas dosen hanya diikuti bila k
 |---|---|
 | Bahasa/runtime | PHP `^8.3` (README: dikembangkan dengan 8.5), Node 22+ |
 | Framework | `laravel/framework ^13.17`, `livewire/livewire ^4.4`, `laravel/tinker ^3.0` |
-| Autentikasi web | **`laravel/breeze ^2.4` (Blade) — wajib**, belum terpasang. Versi 2.4.2 mendukung Laravel 13 (§3.14) |
-| Autentikasi API | `laravel/sanctum 4.4.x` (belum terpasang; mendukung Laravel 13) |
-| Dev | `laravel/boost`, `laravel/pail`, `laravel/pao`, `laravel/pint`, `phpunit ^12.5.12`, `mockery`, `fakerphp/faker`, `nunomaduro/collision`; tambahan `barryvdh/laravel-debugbar 4.4.x` (belum terpasang) |
+| Autentikasi web | **`laravel/breeze ^2.4` (Blade) — wajib dan terpasang**. Versi 2.4.2 mendukung Laravel 13 (§3.14) |
+| Autentikasi API | `laravel/sanctum 4.4.x` (terpasang; mendukung Laravel 13) |
+| Dev | `laravel/boost`, `laravel/pail`, `laravel/pao`, `laravel/pint`, `phpunit ^12.5.12`, `mockery`, `fakerphp/faker`, `nunomaduro/collision`; tambahan `barryvdh/laravel-debugbar 4.4.x` (terpasang) |
 | Frontend | Vite 8, Tailwind 4 (`@tailwindcss/vite`), `laravel-vite-plugin` |
 | Database | SQLite (default `.env.example`), session/cache/queue di database. **Dipertahankan.** `config/database.php`: `foreign_key_constraints` = `env('DB_FOREIGN_KEYS', true)`; `busy_timeout`, `journal_mode`, `synchronous` bernilai `null` (hardcoded, bukan dari env); `transaction_mode` = `DEFERRED` |
 | Browser worker | Node + Playwright Chromium, port 3001, satu sesi sekaligus |
@@ -148,7 +148,7 @@ Tidak ada tabel yang menyimpan prompt, jawaban mentah, nama model, atau jumlah t
 - PHPUnit (`phpunit.xml`): SQLite `:memory:`, `QUEUE_CONNECTION=sync`, cache dan session `array`.
 - Feature: `AuthTest`, `DashboardTest`, `EvidenceTest`, `ExampleTest`, `ExecuteQaRunTest`, `PreferencesTest`, `QaAgentTest`, `RepairSandboxTest`. Unit: `BrowserWorkerTest`, `ExampleTest`, `GitHubAppClientTest`, `GitHubRepositoryUrlTest`, `ModelClientTest`, `PatchPolicyTest`, `TargetPolicyTest`. Worker: `browser`, `browser.integration`, `policy`, `server`.
 - Factory: `UserFactory`, `ProjectFactory` (state `local()`, `publishing()`), `QaRunFactory`. Seeder: `DatabaseSeeder` (membuat "Test User"), `PreviewSeeder` (hanya jalan di `APP_ENV=testing` dengan database `/tmp/autoqa-ui-preview-*`).
-- Dependensi luar di-mock. **Baseline sudah diverifikasi pada checkout ini (2026-11-15): `php artisan test --compact` = 223 test / 887 assertion, hijau.** Setelah Breeze, `tests/Feature/AuthTest.php` harus diganti/disesuaikan dengan route dan perilaku Breeze; jumlah test akan berubah. Test Breeze bawaan tidak boleh di-commit mentah tanpa disesuaikan.
+- Dependensi luar di-mock. **Baseline sebelum implementasi: 223 test / 887 assertion hijau. Setelah implementasi WS0–WS8: 257 test / 1034 assertion hijau.** `AuthTest` sudah disesuaikan dengan route Breeze dan test Breeze bawaan tidak dipakai mentah.
 
 ### 3.10 Batasan yang sudah terdokumentasi (README dan docs)
 
@@ -169,7 +169,7 @@ Perbaikan hanya untuk Laravel PHP/Blade kecil (maks. 5 file / 64 KB, kandidat so
 
 ### 3.12 Klarifikasi status skema chat
 
-**Koreksi v1.2:** klaim lama bahwa migration dan tiga model chat sudah dibuat di salinan lokal **tidak berlaku untuk checkout ini**. Tidak ditemukan `database/migrations/2026_11_15_000001_create_chat_tables.php`, `app/Models/{ChatSession,ChatMessage,ToolExecutionLog}.php`, relasi chat pada `QaRun`, maupun branch `feat/chat-transcript-schema`. Dengan demikian WS1 dimulai dari nol. Satu-satunya perubahan yang sudah masuk repo adalah konfigurasi model kampus pada commit `1500ddf`.
+**Status v1.3:** skema chat sudah diimplementasikan di checkout ini: `database/migrations/2026_11_15_000001_create_chat_tables.php`, model `ChatSession`/`ChatMessage`/`ToolExecutionLog`, relasi pada `User` dan `QaRun`, factory, seeder, serta test cascade/unique. Catatan v1.2 tentang ketiadaan skema dipertahankan sebagai sejarah koreksi.
 
 ### 3.13 Gateway kampus Senopati AI ITS
 
@@ -201,7 +201,7 @@ Konsekuensi untuk desain:
 
 ### 3.14 Requirement Breeze (wajib, revisi v1.2)
 
-Dosen **mewajibkan Laravel Breeze**. Scaffolding Breeze harus dipakai, bukan sekadar ditambahkan sebagai dependency yang tidak aktif. Baseline saat ini memakai `AuthController` kustom dan view `auth/login`/`auth/register`; keduanya diganti.
+Dosen **mewajibkan Laravel Breeze**. Scaffolding Breeze harus dipakai, bukan sekadar ditambahkan sebagai dependency yang tidak aktif. **Status v1.3: Breeze terpasang**; `AuthController` kustom dan route auth-nya sudah dihapus, diganti `routes/auth.php` serta controller/request Breeze. View auth memakai desain kustom yang sudah ada, dan aturan single-operator dipertahankan.
 
 | Aspek | Baseline | Target wajib |
 |---|---|---|
@@ -579,16 +579,16 @@ Urutan fase tidak wajib berurutan; kolom "Bergantung pada" menunjukkan dependens
 
 | Fase | Isi | Bergantung pada | Status |
 |---|---|---|---|
-| 0 | Baseline: `composer install`, `php artisan test --compact`, `npm ci`/`npm run build`; uji manual gateway Senopati: streaming, `usage`, `response_format`, `/models` (§3.13) | - | **Selesai**: 223 test hijau; gateway terverifikasi (2026-11-15) |
-| 0a | **Breeze wajib**: pasang `laravel/breeze ^2.4`, adaptasi auth/routing/view/test, pertahankan UI dan single-operator (FR-0.x) | 0 | Belum; harus selesai sebelum Fase 3 |
-| 1 | Skema, model, relasi, factory, seeder, test relasi/cascade (FR-1.x) | 0 | Belum: migration/model chat belum ada di checkout ini (§3.12) |
-| 2 | `TranscriptRecorder`, integrasi `ModelClient`/`QaAgent` (FR-2.x) | 1 | Belum |
-| 3 | Sanctum, token Settings, `ChatRequest`, `ChatResource`, `ModelClient::chat()`, `POST /api/chat-ai` (FR-3.x) | 0a, 1 | Belum |
-| 4 | Riwayat API + halaman HTML + Policy + Debugbar (FR-4.x) | 1 (dan 3 untuk API) | Belum |
-| 5 | System prompt tema (FR-6.x) | 3 | Belum |
-| 6 | Streaming SSE (FR-5.x) | 3 | Belum |
-| 7 | Fallback (FR-7.x) | 3 | Belum (**terakhir**) |
-| 8 | Test akhir, Pint, `docs/CHAT_API.md`, README, `.env.example` (FR-8.x) | semua | Belum |
+| 0 | Baseline: `composer install`, `php artisan test --compact`, `npm ci`/`npm run build`; uji manual gateway Senopati: streaming, `usage`, `response_format`, `/models` (§3.13) | - | **Selesai** |
+| 0a | **Breeze wajib**: pasang `laravel/breeze ^2.4`, adaptasi auth/routing/view/test, pertahankan UI dan single-operator (FR-0.x) | 0 | **Selesai** |
+| 1 | Skema, model, relasi, factory, seeder, test relasi/cascade (FR-1.x) | 0 | **Selesai** |
+| 2 | `TranscriptRecorder`, integrasi `ModelClient`/`QaAgent` (FR-2.x) | 1 | **Selesai** |
+| 3 | Sanctum, token Settings, `ChatRequest`, `ChatResource`, `ModelClient::chat()`, `POST /api/chat-ai` (FR-3.x) | 0a, 1 | **Selesai** |
+| 4 | Riwayat API + halaman HTML + Policy + Debugbar (FR-4.x) | 1 (dan 3 untuk API) | **Selesai** |
+| 5 | System prompt tema (FR-6.x) | 3 | **Selesai** |
+| 6 | Streaming SSE (FR-5.x) | 3 | **Selesai** |
+| 7 | Fallback (FR-7.x) | 3 | **Selesai** |
+| 8 | Test akhir, Pint, `docs/CHAT_API.md`, README, `.env.example` (FR-8.x) | semua | **Selesai** |
 
 Fase 2 dan fase 3 saling independen dan dapat dikerjakan paralel setelah fase 1, tetapi fase 3 juga menunggu fase 0a (Breeze) karena `User` dan auth harus final sebelum `HasApiTokens` ditambahkan.
 
@@ -676,7 +676,7 @@ Breeze aktif dan auth kustom sudah dihapus; suite PHPUnit hijau; `cd worker && n
 | R19 | Registrasi Breeze default membuka pendaftaran banyak operator dan password minimal 8 | Pindahkan aturan single-operator, `Cache::lock`, dan `Password::min(12)` ke `RegisteredUserController`; uji registrasi kedua 403 |
 | R20 | Alpine/Tailwind dari Breeze bentrok dengan Tailwind 4 yang sudah ada | Pertahankan pipeline Tailwind 4; tambahkan Alpine hanya jika diperlukan; jalankan `npm run build` |
 | A1 | Asumsi: satu operator menggunakan seluruh sistem; kapasitas SQLite memadai | |
-| A2 | Asumsi: baseline test hijau | Diverifikasi pada Fase 0 |
+| A2 | Asumsi: baseline test hijau | Diverifikasi; suite akhir 257 test / 1034 assertion |
 
 ---
 
