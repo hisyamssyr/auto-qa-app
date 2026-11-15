@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Exceptions\ModelUnavailableException;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
 use RuntimeException;
 
@@ -25,6 +27,38 @@ class ModelClient
         } catch (\Throwable) {
             return ['ready' => false, 'message' => 'Start the CPU model server at MODEL_URL.'];
         }
+    }
+
+    public function chat(array $messages): array
+    {
+        try {
+            $response = Http::withToken(config('autoqa.model_key') ?: 'local')
+                ->connectTimeout(3)
+                ->timeout(config('autoqa.model_timeout', 90))
+                ->post(rtrim(config('autoqa.model_url'), '/').'/chat/completions', $this->chatPayload($messages));
+        } catch (ConnectionException $exception) {
+            throw new ModelUnavailableException('The language model is unavailable.', previous: $exception);
+        }
+
+        if (! $response->successful()) {
+            throw new ModelUnavailableException('The language model is unavailable.');
+        }
+
+        $content = $response->json('choices.0.message.content');
+        if (! is_string($content) || trim($content) === '') {
+            throw new ModelUnavailableException('The language model returned an empty response.');
+        }
+
+        $usage = $response->json('usage');
+        $model = $response->json('model');
+
+        return [
+            'content' => $this->stripThink($content),
+            'model_used' => is_string($model) ? $model : config('autoqa.model_name'),
+            'prompt_tokens' => is_array($usage) && isset($usage['prompt_tokens']) ? (int) $usage['prompt_tokens'] : null,
+            'completion_tokens' => is_array($usage) && isset($usage['completion_tokens']) ? (int) $usage['completion_tokens'] : null,
+            'total_tokens' => is_array($usage) && isset($usage['total_tokens']) ? (int) $usage['total_tokens'] : null,
+        ];
     }
 
     public function decide(string $instruction, array $context): array
@@ -68,5 +102,30 @@ class ModelClient
         );
 
         return $result;
+    }
+
+    private function chatPayload(array $messages): array
+    {
+        $payload = [
+            'model' => config('autoqa.model_name'),
+            'messages' => $messages,
+        ];
+
+        $temperature = config('autoqa.chat_temperature');
+        if ($temperature !== null && $temperature !== '') {
+            $payload['temperature'] = (float) $temperature;
+        }
+
+        $maxTokens = config('autoqa.chat_max_tokens');
+        if ($maxTokens !== null && $maxTokens !== '') {
+            $payload['max_tokens'] = (int) $maxTokens;
+        }
+
+        return $payload;
+    }
+
+    private function stripThink(string $content): string
+    {
+        return preg_replace('/<think>.*?<\/think>/s', '', $content) ?? $content;
     }
 }
