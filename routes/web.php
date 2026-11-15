@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\ChatSessionPageController;
 use App\Http\Controllers\EvidenceController;
 use App\Http\Controllers\PreferencesController;
 use App\Livewire\Dashboard;
@@ -15,4 +16,5 @@ Route::middleware('auth')->group(function () {
     Route::get('/runs/{run}/evidence/{filename}', EvidenceController::class)
         ->where('filename', 'browser-[a-zA-Z0-9-]+\.(png|zip)')
         ->name('runs.evidence');
+    Route::get('/chat-sessions/{session}', ChatSessionPageController::class)->name('chat-sessions.show');
 });

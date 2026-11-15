@@ -38,6 +38,9 @@ return [
     'last_used' => 'Terakhir digunakan',
     'never' => 'Belum pernah',
     'created' => 'Dibuat',
+    'chat_transcript' => 'Transkrip chat',
+    'message_count' => ':count pesan',
+    'tokens' => ':count token',
     'attributes' => [
         'name' => 'Nama proyek',
         'repositoryUrl' => 'Repositori GitHub',

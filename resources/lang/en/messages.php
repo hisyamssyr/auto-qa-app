@@ -38,6 +38,9 @@ return [
     'last_used' => 'Last used',
     'never' => 'Never',
     'created' => 'Created',
+    'chat_transcript' => 'Chat transcript',
+    'message_count' => ':count messages',
+    'tokens' => ':count tokens',
     'attributes' => [
         'name' => 'project name',
         'repositoryUrl' => 'GitHub repository',
